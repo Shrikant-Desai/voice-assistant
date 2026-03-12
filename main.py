@@ -5,11 +5,24 @@ import os
 import pygame
 import webbrowser
 import requests
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
 
 
-newsapi = "462584cebcad459ebe2287eff081e9bb"
+# Load .env file
+load_dotenv()
+
+# Get API key
+api_key = os.getenv("GEMINI_API_KEY")
+
+
+newsapi = os.getenv("NEWS_API_KEY")
 
 pygame.mixer.init()
+
+# Initialize the Gemini API client
+client = genai.Client(api_key=api_key)
 
 
 async def speak(text):
@@ -30,6 +43,23 @@ async def speak(text):
 
 def say(text):
     asyncio.run(speak(text))
+
+
+def aiProcess(c):
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents="You are voice assistant. You are helpful and precise. Answer the question in a concise manner.\n\n"
+            + c,
+            # config=types.GenerateContentConfig(
+            #     thinking_config=types.ThinkingConfig(thinking_level="low")
+            # ),
+        )
+        print("AI Response:", response.text)
+        return response.text
+    except Exception as e:
+        print("Error generating content:", e)
+        return "Sorry, I encountered an error while generating the response."
 
 
 def processCommand(c):
@@ -61,14 +91,13 @@ def processCommand(c):
                 say(article["title"])
 
     else:
-        # Let OpenAI handle the request
-        # output = aiProcess(c)
-        # speak(output)
-        say("Sorry, Veeram")
+
+        output = aiProcess(c)
+        say(output)
 
 
 if __name__ == "__main__":
-    say("Initializing your personal voice assistant....")
+    say("Initializing Jarvis your personal voice assistant....")
 
     while True:
         recognizer = sr.Recognizer()
@@ -81,15 +110,15 @@ if __name__ == "__main__":
             text = recognizer.recognize_google(audio)
             print("You said:", text)
 
-            if text.lower() == "hey buddy":
-                say("Yes, I am here. tell me what can i do for you?")
+            if text.lower() == "jarvis":
+                say("Yes, what can i do for you?")
                 # Listen for command
                 with sr.Microphone() as source:
-                    print("Buddy is Active...")
+                    print("Jarvis is Active...")
                     audio = recognizer.listen(source)
                     command = recognizer.recognize_google(audio)
 
-                    print(">>>>>>>>", command)
+                    print("Command>>>>>>>>", command)
 
                     processCommand(command)
 
